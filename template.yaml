@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Audio monitoring solution SAM template
+
+
+Globals:
+  Function:
+    Timeout: 900
+    Runtime: nodejs18.x
+    MemorySize: 128
+    Architectures:
+      - x86_64
+
+
+Parameters:
+  RegionPrefix:
+    Type: String
+    Description: 'Region prefix for all AWS resources'
+
+  Stage:
+    Type: String
+    Description: 'Current stage of the deployment'
+
+  LambdaRoleArn:
+    Type: String
+    Description: 'Role used for all lambda functions'
+
+  ConnectInstanceId:
+    Type: String
+    Description: 'Amazon Connect instance ID'
+
+Resources:
+  CallRecordingTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: !Sub '${RegionPrefix}-${Stage}-call-recordings'
+      PrimaryKey:
+        Name: ContactId
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+  SubscriptionFilterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-subscription-filter-handler'
+      CodeUri: src/subFilterHandler
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE: !Ref CallRecordingTable
+
+  StartStateMachineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-start-state-machine'
+      CodeUri: src/startStateMachine
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref CallRecordingStateMachine
+
