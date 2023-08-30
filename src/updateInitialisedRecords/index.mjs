@@ -6,10 +6,6 @@ const connectClient = new ConnectClient();
 
 
 const getNewState = (currentContactDescription) => {
-    console.info('Inside getNewState helper function');
-    console.info('Function parameters: ', currentContactDescription);
-    console.info('Type:', typeof currentContactDescription);
-
     if (currentContactDescription.Contact.DisconnectTimestamp) {
         if (currentContactDescription.Contact.AgentInfo) {
             return 'COMPLETED - AGENT'
@@ -44,22 +40,16 @@ export const handler = async (event, context) => {
             }
         });
         const scanResponse = await ddbClient.send(scanCommand);
-        console.info('Scan response: ', JSON.stringify(scanResponse, null, 2));
-        console.info('Scan response type: ', typeof scanResponse);
 
         if (scanResponse.Count !== 0) {
             for (let item of scanResponse.Items) {
-                console.info('Current item: ', item);
                 const command = new DescribeContactCommand({
                     InstanceId: connectInstanceId,
                     ContactId: item.ContactId.S
                 });
                 const describeContactResult = await connectClient.send(command);
-                console.info('Describe contact result: ', describeContactResult);
-                console.info('Describe contact type: ', typeof describeContactResult);
 
                 const newState = getNewState(describeContactResult);
-                console.info('New state: ', newState);
                 const updateItemCommand = new UpdateItemCommand({
                     TableName: tableName,
                     Key: {

@@ -23,9 +23,11 @@ export const handler = async (event, context) => {
             }
         });
         const scanResult = await ddbClient.send(scanCommand);
+        console.info('Scan result: ', scanResult);
 
         if (scanResult.Items.length !== 0) {
             for (let item of scanResult.Items) {
+                let updated = false;
                 const disconnectTimestamp = item.DisconnectTimestamp.S;
                 const disconnectDateSAST = new Date(disconnectTimestamp).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }).split(',')[0];
 
@@ -35,9 +37,9 @@ export const handler = async (event, context) => {
                     Prefix: `connect/${instanceAlias}/CallRecordings/${disconnectDateSAST}/`,
                     Delimiter: '/',
                     MaxKeys: 1000,
-
                 });
                 const listObjectsResult = await s3Client.send(listObjectsCommand);
+                console.info('S3 bucket list objects result: ', listObjectsResult);
 
                 for (let object of listObjectsResult.Contents) {
                     if (object.Key.includes(item.ContactId.S)) {
@@ -52,22 +54,24 @@ export const handler = async (event, context) => {
                             }
                         });
                         await ddbClient.send(updateItemCommand);
+                        updated = true;
                         console.info(`Contact ID: ${item.ContactId.S} --> 'CALL_RECORDED_SUCCESS'`);
                     }
                 }
-
-                const updateItemCommand = new UpdateItemCommand({
-                    TableName: tableName,
-                    Key: {
-                        'ContactId': { S: item.ContactId.S }
-                    },
-                    UpdateExpression: 'SET RecordingState = :recordingState',
-                    ExpressionAttributeValues: {
-                        ':recordingState': { S: 'CALL_RECORDED_FAILURE' }
-                    }
-                });
-                await ddbClient.send(updateItemCommand);
-                console.info(`Contact ID: ${item.ContactId.S} --> 'CALL_RECORDED_FAILURE'`);
+                if (!updated) {
+                    const updateItemCommand = new UpdateItemCommand({
+                        TableName: tableName,
+                        Key: {
+                            'ContactId': {S: item.ContactId.S}
+                        },
+                        UpdateExpression: 'SET RecordingState = :recordingState',
+                        ExpressionAttributeValues: {
+                            ':recordingState': {S: 'CALL_RECORDED_FAILURE'}
+                        }
+                    });
+                    await ddbClient.send(updateItemCommand);
+                    console.info(`Contact ID: ${item.ContactId.S} --> 'CALL_RECORDED_FAILURE'`);
+                }
             }
 
             const response = {
