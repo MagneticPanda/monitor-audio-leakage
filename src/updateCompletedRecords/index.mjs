@@ -31,7 +31,7 @@ export const handler = async (event, context) => {
                 const disconnectTimestamp = item.DisconnectTimestamp.S;
                 const disconnectDateSAST = new Date(disconnectTimestamp).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }).split(',')[0];
 
-                // TODO: Add logic to handle more than 1000 objects
+                // TODO: Add logic to handle more than 1000 objects (no continuation token in V3)
                 const listObjectsCommand = new ListObjectsCommand({
                     Bucket: recordingBucketName,
                     Prefix: `connect/${instanceAlias}/CallRecordings/${disconnectDateSAST}/`,
