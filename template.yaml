@@ -92,7 +92,8 @@ Resources:
         PerioidicInvoke:
           Type: ScheduleV2
           Properties:
-            ScheduleExpression: cron(*/5 * * * *)
+            ScheduleExpression: cron(0/5 * * * ? *)
+#            cron(13, * * * ? *)
 
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
@@ -167,28 +168,28 @@ Resources:
       LogGroupName: !Sub '/aws/stepfunctions/${Stage}-call-recording-state-machine'
       RetentionInDays: 7
 
-  CloudWatchLogsLambdaInvokeRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub '${RegionPrefix}-${Stage}-cloudwatch-logs-lambda-invoke-role'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - logs.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Policies:
-        - PolicyName: 'CloudWatchLogsLambdaInvokePolicy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'lambda:InvokeFunction'
-                Resource: '*'
+#  CloudWatchLogsLambdaInvokeRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub '${RegionPrefix}-${Stage}-cloudwatch-logs-lambda-invoke-role'
+#      AssumeRolePolicyDocument:
+#        Version: '2012-10-17'
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service:
+#                - logs.amazonaws.com
+#            Action:
+#              - 'sts:AssumeRole'
+#      Policies:
+#        - PolicyName: 'CloudWatchLogsLambdaInvokePolicy'
+#          PolicyDocument:
+#            Version: '2012-10-17'
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - 'lambda:InvokeFunction'
+#                Resource: '*'
 
   LambdaResourcePolicy:
     Type: AWS::Lambda::Permission
