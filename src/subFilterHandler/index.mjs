@@ -29,8 +29,8 @@ export const handler = async (event, context) => {
 
         for (let logEvent of logData.logEvents) {
             console.info('Log event being processed: ', logEvent);
-
-            if (logEvent.ContactFlowModuleType === 'SetRecordingBehavior' && logEvent.Parameters.RecordingBehaviorOption === 'Enable' && logEvent.Parameters.RecordingParticipantOption === 'All') {
+            const logEventMessage = JSON.parse(logEvent.message);
+            if (logEventMessage.ContactFlowModuleType === 'SetRecordingBehavior' && logEventMessage.Parameters.RecordingBehaviorOption === 'Enable' && logEvent.Parameters.RecordingParticipantOption === 'All') {
                 const putItemCommand = new PutItemCommand({
                     TableName: callRecordingsTable,
                     Item: {
