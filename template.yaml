@@ -92,7 +92,7 @@ Resources:
         PerioidicInvoke:
           Type: ScheduleV2
           Properties:
-            ScheduleExpression: cron(0/5 * * * ? *)
+            ScheduleExpression: cron(0/2 * * * ? *)
 #            cron(13, * * * ? *)
 
   UpdateInitialisedRecordsFunction:

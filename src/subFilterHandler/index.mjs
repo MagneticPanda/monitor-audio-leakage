@@ -30,11 +30,12 @@ export const handler = async (event, context) => {
         for (let logEvent of logData.logEvents) {
             console.info('Log event being processed: ', logEvent);
             const logEventMessage = JSON.parse(logEvent.message);
-            if (logEventMessage.ContactFlowModuleType === 'SetRecordingBehavior' && logEventMessage.Parameters.RecordingBehaviorOption === 'Enable' && logEvent.Parameters.RecordingParticipantOption === 'All') {
+            console.info('Log event message JSON parse: ', logEventMessage);
+            if (logEventMessage.ContactFlowModuleType === 'SetRecordingBehavior' && logEventMessage.Parameters.RecordingBehaviorOption === 'Enable' && logEventMessage.Parameters.RecordingParticipantOption === 'All') {
                 const putItemCommand = new PutItemCommand({
                     TableName: callRecordingsTable,
                     Item: {
-                        'ContactId': { S: logEvent.ContactId },
+                        'ContactId': { S: logEventMessage.ContactId },
                         'State': { S: 'INITIALISED' },
                         'InitiationTimestamp': { NULL: true },
                         'DisconnectTimestamp': { NULL: true },
@@ -42,7 +43,7 @@ export const handler = async (event, context) => {
                     }
                 });
                 await ddbClient.send(putItemCommand);
-                console.info(`Initialised contact ID: ${logEvent.ContactId}`);
+                console.info(`Initialised contact ID: ${logEventMessage.ContactId}`);
             }
         }
 

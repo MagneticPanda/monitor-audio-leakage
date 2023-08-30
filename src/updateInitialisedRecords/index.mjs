@@ -6,14 +6,18 @@ const connectClient = new ConnectClient();
 
 
 const getNewState = (currentContactDescription) => {
-    if (currentContactDescription.DisconnectTimestamp) {
-        if (currentContactDescription.AgentInfo) {
+    console.info('Inside getNewState helper function');
+    console.info('Function parameters: ', currentContactDescription);
+    console.info('Type:', typeof currentContactDescription);
+
+    if (currentContactDescription.Contact.DisconnectTimestamp) {
+        if (currentContactDescription.Contact.AgentInfo) {
             return 'COMPLETED - AGENT'
         } else {
             return 'COMPLETED - QUEUE/IVR'
         }
     } else {
-        if (currentContactDescription.AgentInfo) {
+        if (currentContactDescription.Contact.AgentInfo) {
             return 'IN_PROGRESS - AGENT'
         } else {
             return 'IN_PROGRESS - QUEUE/IVR'
@@ -24,38 +28,51 @@ const getNewState = (currentContactDescription) => {
 
 export const handler = async (event, context) => {
     try {
-        console.info('Lambda event:', JSON.stringify(event, null, 2));
-        console.info('Lambda environment: ', JSON.stringify(context, null, 2));
+        console.info('Incoming event: ', JSON.stringify(event, null, 2));
+        console.info('Execution environment: ', JSON.stringify(context, null, 2));
 
         const { DDB_TABLE: tableName, CONNECT_ID: connectInstanceId } = process.env;
 
         const scanCommand = new ScanCommand({
             TableName: tableName,
-            FilterExpression: 'State = :state',
+            FilterExpression: '#ContactState = :state',
             ExpressionAttributeValues: {
                 ':state': { S: 'INITIALISED' }
+            },
+            ExpressionAttributeNames: {
+                '#ContactState': 'State'
             }
         });
         const scanResponse = await ddbClient.send(scanCommand);
+        console.info('Scan response: ', JSON.stringify(scanResponse, null, 2));
+        console.info('Scan response type: ', typeof scanResponse);
 
         if (scanResponse.Count !== 0) {
             for (let item of scanResponse.Items) {
+                console.info('Current item: ', item);
                 const command = new DescribeContactCommand({
                     InstanceId: connectInstanceId,
                     ContactId: item.ContactId.S
                 });
                 const describeContactResult = await connectClient.send(command);
+                console.info('Describe contact result: ', describeContactResult);
+                console.info('Describe contact type: ', typeof describeContactResult);
+
                 const newState = getNewState(describeContactResult);
+                console.info('New state: ', newState);
                 const updateItemCommand = new UpdateItemCommand({
                     TableName: tableName,
                     Key: {
-                        'ContactId': item.ContactId
+                        'ContactId': { S: item.ContactId.S }
                     },
-                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp, State = :state , DisconnectTimestamp = :disconnectTimestamp',
+                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp , #State = :state , DisconnectTimestamp = :disconnectTimestamp',
                     ExpressionAttributeValues: {
                         ':state': { S: newState },
-                        ':initiationTimestamp': { S: describeContactResult.InitiationTimestamp },
-                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.DisconnectTimestamp } : { NULL: true }
+                        ':initiationTimestamp': { S: describeContactResult.Contact.InitiationTimestamp },
+                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true }
+                    },
+                    ExpressionAttributeNames: {
+                        '#State': 'State'
                     }
                 });
                 await ddbClient.send(updateItemCommand);
