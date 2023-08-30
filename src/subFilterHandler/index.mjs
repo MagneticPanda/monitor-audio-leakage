@@ -15,7 +15,7 @@ export const handler = async (event, context) => {
         const logData = JSON.parse(unzippedData.toString('utf8'));
         console.info('Decoded log data: ', JSON.stringify(logData, null, 2));
 
-        for (let logEvent in logData.logEvents) {
+        for (let logEvent of logData.logEvents) {
             console.info('Log event being processed: ', logEvent);
 
             if (logEvent.ContactFlowModuleType === 'SetRecordingBehavior' && logEvent.Parameters.RecordingBehaviorOption === 'Enable' && logEvent.Parameters.RecordingParticipantOption === 'All') {
@@ -25,7 +25,8 @@ export const handler = async (event, context) => {
                         'ContactId': { S: logEvent.ContactId },
                         'State': { S: 'INITIALISED' },
                         'InitiationTimestamp': { NULL: true },
-                        'DisconnectTimestamp': { NULL: true }
+                        'DisconnectTimestamp': { NULL: true },
+                        'RecordingState': { NULL: true }
                     }
                 });
                 await ddbClient.send(putItemCommand);

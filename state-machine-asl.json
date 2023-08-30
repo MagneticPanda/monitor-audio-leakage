@@ -1,0 +1,46 @@
+{
+  "Comment": "A state machine that coordinates the call recording leak detection process.",
+  "StartAt": "UpdateInitialisedRecords",
+  "States": {
+    "UpdateInitialisedRecords": {
+      "Type": "Task",
+      "TimeoutSeconds": 900,
+      "Resource": "${UpdateInitialisedRecordsFunction}",
+      "Next": "ParallelState"
+    },
+    "ParallelState": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "CleanTable",
+          "States": {
+            "CleanTable": {
+              "Type": "Task",
+              "TimeoutSeconds": 900,
+              "Resource": "${CleanTableFunction}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "UpdateInProgressRecords",
+          "States": {
+            "UpdateInProgressRecords": {
+              "Type": "Task",
+              "TimeoutSeconds": 900,
+              "Resource": "${UpdateInProgressRecordsFunction}",
+              "Next": "UpdateCompletedRecords"
+            },
+            "UpdateCompletedRecords": {
+              "Type": "Task",
+              "TimeoutSeconds": 900,
+              "Resource": "${UpdateCompletedRecordsFunction}",
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

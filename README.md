@@ -16,7 +16,7 @@ This project contains an implementation that checks if calls, which should be re
 - `COMPLETED - AGENT`: The contact with an agent has been completed
 - `COMPLETED - QUEUE/IVR`: The contact with the queue/IVR has been completed
 
-#### The `RecordedState` Field
+#### The `RecordingState` Field
 _These are the different attributes for entries with `COMPLETED - AGENT` states_
 - `CALL_RECORDED_SUCCESS`: The call was successfully recorded
 - `CALL_RECORDED_FAILURE`: The call was not recorded

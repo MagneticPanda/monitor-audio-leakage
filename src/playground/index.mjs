@@ -16,16 +16,17 @@ export const handler = async (event, context) => {
         const response = await connectClient.send(command);
         console.info('Describe Contact Response: ', response);
 
-        const getContactAttributesCommand = new GetContactAttributesCommand({
-            InstanceId: instanceId,
-            InitialContactId: contactId
-        });
-        const contactAttributesResponse = await connectClient.send(getContactAttributesCommand);
-        console.info('Contact Attributes Response: ', contactAttributesResponse);
+        const disconnectTimestamp = response.Contact.DisconnectTimestamp;
+        // converting the timestamp from 2023-08-29T10:31:10.343Z (UTC) to SAST (UTC+2)
+        const disconnectTimestampSAST = new Date(disconnectTimestamp).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' });
+        console.info('SA date', disconnectTimestampSAST);
+        const date = disconnectTimestampSAST.split(',')[0];
+        console.info('Disconnect Timestamp: ', date);
+
 
         return {
             statusCode: 200,
-            message: 'Successfully fetched contact details',
+            message: 'Successfully fetched contact details'
         };
     } catch (err) {
         console.error('Error encountered: ', err);
@@ -36,8 +37,10 @@ export const handler = async (event, context) => {
     }
 };
 
-// handler({ contactId: '955c07e1-af64-4094-9c16-c59995ecdcbe'});
+const { describeContactResponse } = await handler({ contactId: 'd4447241-4114-442c-9724-585116e47a2c'});
 // handler({ contactId: 'b1797f20-7c75-48d9-94a6-6dfbeb539105'});
 // handler({ contactId: '767cdca6-2acd-4db4-9d1d-04a5859d6e0d'});
 // handler({ contactId: 'bd749cef-008a-4130-b137-0dfdfd2acf9c'});
-handler({ contactId: 'a346ae06-accc-4101-8cf1-beb322f47c6a'});
+// const { describeContactResponse } = handler({ contactId: 'a346ae06-accc-4101-8cf1-beb322f47c6a'});
+// const disconnectTimestamp = describeContactResponse.Contact.DisconnectTimestamp;
+// console.info('Disconnect Timestamp: ', disconnectTimestamp);

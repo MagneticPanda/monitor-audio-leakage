@@ -29,6 +29,19 @@ Parameters:
     Type: String
     Description: 'Amazon Connect instance ID'
 
+  ConnectInstanceAlias:
+    Type: String
+    Description: 'Amazon Connect instance alias'
+
+  CallRecordingsBucket:
+    Type: String
+    Description: 'Name of S3 bucket for call recordings'
+
+  StepFunctionRoleArn:
+    Type: String
+    Description: 'Role used for the step function'
+
+
 Resources:
   CallRecordingTable:
     Type: AWS::Serverless::SimpleTable
@@ -63,3 +76,75 @@ Resources:
         Variables:
           STATE_MACHINE_ARN: !Ref CallRecordingStateMachine
 
+  UpdateInitialisedRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-initialised-records'
+      CodeUri: src/updateInitialisedRecords
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE: !Ref CallRecordingTable
+          CONNECT_ID: !Ref ConnectInstanceId
+
+  CleanTableFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-clean-table'
+      CodeUri: src/cleanTable
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE: !Ref CallRecordingTable
+
+  UpdateInProgressRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-in-progress'
+      CodeUri: src/updateInProgressRecords
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE: !Ref CallRecordingTable
+          CONNECT_ID: !Ref ConnectInstanceId
+
+  UpdateCompletedRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-completed'
+      CodeUri: src/updateCompletedRecords
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE: !Ref CallRecordingTable
+          RECORDING_BUCKET: !Ref CallRecordingsBucket
+          CONNECT_ALIAS: !Ref ConnectInstanceAlias
+
+  CallRecordingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: 'STANDARD'
+      Name: !Sub '${RegionPrefix}-${Stage}-call-recording-state-machine'
+      DefinitionUri: state-machine-asl.json
+      Role: !Ref StepFunctionRoleArn
+      DefinitionSubstitutions:
+        UpdateInitialisedRecordsFunction: !GetAtt UpdateInitialisedRecordsFunction.Arn
+        CleanTableFunction: !GetAtt CleanTableFunction.Arn
+        UpdateInProgressRecordsFunction: !GetAtt UpdateInProgressRecordsFunction.Arn
+        UpdateCompletedRecordsFunction: !GetAtt UpdateCompletedRecordsFunction.Arn
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt CallRecordingStateMachineLogGroup.Arn
+        IncludeExecutionData: true
+        Level: ALL
+
+  CallRecordingStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/stepfunctions/${Stage}-call-recording-state-machine'
+      RetentionInDays: 7
