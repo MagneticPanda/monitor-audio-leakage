@@ -11,9 +11,12 @@ export const handler = async (event, context) => {
 
         const scanCommand = new ScanCommand({
             TableName: tableName,
-            FilterExpression: 'State = :state',
+            FilterExpression: '#State = :state',
             ExpressionAttributeValues: {
                 ':state': { S: 'COMPLETED - QUEUE/IVR' }
+            },
+            ExpressionAttributeNames: {
+                '#State': 'State'
             }
         });
         const scanResult = await ddbClient.send(scanCommand);

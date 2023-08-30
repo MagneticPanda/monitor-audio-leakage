@@ -6,14 +6,14 @@ const connectClient = new ConnectClient();
 
 
 const getNewState = (currentContactDescription) => {
-    if (currentContactDescription.DisconnectTimestamp) {
-        if (currentContactDescription.AgentInfo) {
+    if (currentContactDescription.Contact.DisconnectTimestamp) {
+        if (currentContactDescription.Contact.AgentInfo) {
             return 'COMPLETED - AGENT'
         } else {
             return 'COMPLETED - QUEUE/IVR'
         }
     } else {
-        if (currentContactDescription.AgentInfo) {
+        if (currentContactDescription.Contact.AgentInfo) {
             return 'IN_PROGRESS - AGENT'
         } else {
             return 'IN_PROGRESS - QUEUE/IVR'
@@ -32,10 +32,13 @@ export const handler = async (event, context) => {
         // scanning the table for records where 'State' is 'IN_PROGRESS - QUEUE/IVR' or 'IN_PROGRESS - AGENT'
         const scanCommand = new ScanCommand({
             TableName: tableName,
-            FilterExpression: 'State IN (:state1 , :state2)',
+            FilterExpression: '#State IN (:state1 , :state2)',
             ExpressionAttributeValues: {
                 ':state1': { S: 'IN_PROGRESS - QUEUE/IVR' },
                 ':state2': { S: 'IN_PROGRESS - AGENT' }
+            },
+            ExpressionAttributeNames: {
+                '#State': 'State'
             }
         });
         const scanResponse = await ddbClient.send(scanCommand);
@@ -51,12 +54,12 @@ export const handler = async (event, context) => {
                 const updateItemCommand = new UpdateItemCommand({
                     TableName: tableName,
                     Key: {
-                        'ContactId': item.ContactId
+                        'ContactId': { S: item.ContactId.S }
                     },
-                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp, State = :state , DisconnectTimestamp = :disconnectTimestamp',
+                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp, #State = :state , DisconnectTimestamp = :disconnectTimestamp',
                     ExpressionAttributeValues: {
                         ':state': { S: newState },
-                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.DisconnectTimestamp } : { NULL: true }
+                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true }
                     }
                 });
                 await ddbClient.send(updateItemCommand);

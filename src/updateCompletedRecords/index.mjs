@@ -13,10 +13,13 @@ export const handler = async (event, context) => {
 
         const scanCommand = new ScanCommand({
             TableName: tableName,
-            FilterExpression: 'RecordingState = :recordingState AND State = :state',
+            FilterExpression: 'RecordingState = :recordingState AND #State = :state',
             ExpressionAttributeValues: {
                 ':recordingState': { NULL: true },
                 ':state': { S: 'COMPLETED - AGENT' }
+            },
+            ExpressionAttributeNames: {
+                '#State': 'State'
             }
         });
         const scanResult = await ddbClient.send(scanCommand);
