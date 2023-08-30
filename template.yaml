@@ -33,6 +33,10 @@ Parameters:
     Type: String
     Description: 'Amazon Connect instance alias'
 
+  ConnectLogGroup:
+    Type: String
+    Description: 'Amazon Connect log group'
+
   CallRecordingsBucket:
     Type: String
     Description: 'Name of S3 bucket for call recordings'
@@ -40,6 +44,7 @@ Parameters:
   StepFunctionRoleArn:
     Type: String
     Description: 'Role used for the step function'
+
 
 
 Resources:
@@ -65,6 +70,15 @@ Resources:
         Variables:
           DDB_TABLE: !Ref CallRecordingTable
 
+#  Cloudwatch subscription filter
+  SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      LogGroupName: !Ref ConnectLogGroup
+      DestinationArn: !GetAtt SubscriptionFilterFunction.Arn
+      FilterPattern: ''
+      FilterName: !Sub '${RegionPrefix}-${Stage}-subscription-filter'
+
   StartStateMachineFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -75,6 +89,11 @@ Resources:
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref CallRecordingStateMachine
+      Events:
+        PerioidicInvoke:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(*/5 * * * *)
 
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
