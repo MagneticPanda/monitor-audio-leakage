@@ -56,10 +56,13 @@ export const handler = async (event, context) => {
                     Key: {
                         'ContactId': { S: item.ContactId.S }
                     },
-                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp, #State = :state , DisconnectTimestamp = :disconnectTimestamp',
+                    UpdateExpression: 'SET #State = :state , DisconnectTimestamp = :disconnectTimestamp',
                     ExpressionAttributeValues: {
                         ':state': { S: newState },
                         ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true }
+                    },
+                    ExpressionAttributeNames: {
+                        '#State': 'State'
                     }
                 });
                 await ddbClient.send(updateItemCommand);
