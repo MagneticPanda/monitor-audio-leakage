@@ -9,7 +9,7 @@ This project implements an Amazon Connect call recording leakage detector. The s
 > TODO: Insert a solution architecture
 
 The solution consists of the following main components:
-- CloudWatch Logs Subscription Filter - A subscription filter that ingests real-time CloudWatch logs for the Connect instance log group. This filter detects incoming log events which sets the recording and analytics behaviour. Any identified records are cached into the DynamoDB table with an `INITIALISED` status. 
+- CloudWatch Logs Subscription Filter - A subscription filter that ingests real-time CloudWatch logs for the Connect instance log group. This filter detects incoming log events which sets the recording and analytics behaviour. Any event matching these criteria is cached into the DynamoDB table with an `INITIALISED` status. 
 - DynamoDB Table - A non-relational database that caches the recording state of calls. See the DDB Table Strategy section for more information.
 - Step Function - The state machine that orchestrates the polling and updating of the recording state of calls. See the Step Function Strategy section for more information.
 
@@ -32,7 +32,7 @@ _These are the different attributes for entries with `COMPLETED - AGENT` states_
 - _`COMPLETED - AGENT` (with AgentInfo) must have the recording bucket searched and update the `RecordState` field_
 
 ### Step Function Strategy
-A lambda function will be invoked every 5-minutes (needs to run on mod 5 minutes eg: 13:00, 13:05 etc. rather than 13:01, 
+A lambda function will be invoked every *5-minutes (needs to run on mod 5 minutes eg: 13:00, 13:05 etc. rather than 13:01, 
 13:06 etc.). The lambda has the sole duty of initiating a state machine with the following states:
 
 - The entry state will be a task state that polls the `INITIALISED` records and updates their `State` accordingly
@@ -43,6 +43,7 @@ A lambda function will be invoked every 5-minutes (needs to run on mod 5 minutes
     - The second task state will poll the `COMPLETED - AGENT` states without a `RecordState` field and update accordingly
 
 > The `State` field of these records are updated using the `DescribeContact` API. The `RecordingState` field is updated by checking the recording bucket.
+> *This can be altered to every 1 minute if the solution is not cost sensitive
 
 ### `DescribeContact` API Responses
 #### [Completed] Spoke to agent
