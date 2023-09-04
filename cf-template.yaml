@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Audio monitoring solution SAM template
+Globals:
+  Function:
+    Timeout: 900
+    Runtime: nodejs18.x
+    MemorySize: 128
+    Architectures:
+    - x86_64
+Parameters:
+  RegionPrefix:
+    Type: String
+    Description: Region prefix for all AWS resources
+  Stage:
+    Type: String
+    Description: Current stage of the deployment
+  LambdaRoleArn:
+    Type: String
+    Description: Role used for all lambda functions
+  ConnectInstanceId:
+    Type: String
+    Description: Amazon Connect instance ID
+  ConnectInstanceAlias:
+    Type: String
+    Description: Amazon Connect instance alias
+  ConnectLogGroup:
+    Type: String
+    Description: Amazon Connect log group
+  CallRecordingsBucket:
+    Type: String
+    Description: Name of S3 bucket for call recordings
+  StepFunctionRoleArn:
+    Type: String
+    Description: Role used for the step function
+Resources:
+  CallRecordingTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-call-recordings
+      PrimaryKey:
+        Name: ContactId
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+    Metadata:
+      SamResourceId: CallRecordingTable
+  SubscriptionFilterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-subscription-filter-handler
+      CodeUri: s3://sash-sam/monitor-recording-leakage/857fc98300187fbd7f48c550b01928fc
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE:
+            Ref: CallRecordingTable
+    Metadata:
+      SamResourceId: SubscriptionFilterFunction
+  SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      LogGroupName:
+        Ref: ConnectLogGroup
+      DestinationArn:
+        Fn::GetAtt:
+        - SubscriptionFilterFunction
+        - Arn
+      FilterPattern: ''
+      FilterName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-subscription-filter
+    Metadata:
+      SamResourceId: SubscriptionFilter
+  StartStateMachineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-start-state-machine
+      CodeUri: s3://sash-sam/monitor-recording-leakage/bfdf3c3f6eebc56c386a7ed46acb917a
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN:
+            Ref: CallRecordingStateMachine
+      Events:
+        PerioidicInvoke:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(0/2 * * * ? *)
+    Metadata:
+      SamResourceId: StartStateMachineFunction
+  UpdateInitialisedRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-update-initialised-records
+      CodeUri: s3://sash-sam/monitor-recording-leakage/1566f11b9efa63d9cc562f0a1d179f58
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE:
+            Ref: CallRecordingTable
+          CONNECT_ID:
+            Ref: ConnectInstanceId
+    Metadata:
+      SamResourceId: UpdateInitialisedRecordsFunction
+  CleanTableFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-clean-table
+      CodeUri: s3://sash-sam/monitor-recording-leakage/30dbd49998ccde141690ef040e5e4209
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE:
+            Ref: CallRecordingTable
+    Metadata:
+      SamResourceId: CleanTableFunction
+  UpdateInProgressRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-update-in-progress
+      CodeUri: s3://sash-sam/monitor-recording-leakage/8375e633d3c7d99b552ef9f24ac137d8
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE:
+            Ref: CallRecordingTable
+          CONNECT_ID:
+            Ref: ConnectInstanceId
+    Metadata:
+      SamResourceId: UpdateInProgressRecordsFunction
+  UpdateCompletedRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${RegionPrefix}-${Stage}-update-completed
+      CodeUri: s3://sash-sam/monitor-recording-leakage/d909854241a76f091cccff031d694155
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          DDB_TABLE:
+            Ref: CallRecordingTable
+          RECORDING_BUCKET:
+            Ref: CallRecordingsBucket
+          CONNECT_ALIAS:
+            Ref: ConnectInstanceAlias
+    Metadata:
+      SamResourceId: UpdateCompletedRecordsFunction
+  CallRecordingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: STANDARD
+      Name:
+        Fn::Sub: ${RegionPrefix}-${Stage}-call-recording-state-machine
+      DefinitionUri:
+        Bucket: sash-sam
+        Key: monitor-recording-leakage/b6954937c458e031b89cbd75c27a077d
+      Role:
+        Ref: StepFunctionRoleArn
+      DefinitionSubstitutions:
+        UpdateInitialisedRecordsFunction:
+          Fn::GetAtt:
+          - UpdateInitialisedRecordsFunction
+          - Arn
+        CleanTableFunction:
+          Fn::GetAtt:
+          - CleanTableFunction
+          - Arn
+        UpdateInProgressRecordsFunction:
+          Fn::GetAtt:
+          - UpdateInProgressRecordsFunction
+          - Arn
+        UpdateCompletedRecordsFunction:
+          Fn::GetAtt:
+          - UpdateCompletedRecordsFunction
+          - Arn
+      Logging:
+        Destinations:
+        - CloudWatchLogsLogGroup:
+            LogGroupArn:
+              Fn::GetAtt:
+              - CallRecordingStateMachineLogGroup
+              - Arn
+        IncludeExecutionData: true
+        Level: ALL
+    Metadata:
+      SamResourceId: CallRecordingStateMachine
+  CallRecordingStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/stepfunctions/${Stage}-call-recording-state-machine
+      RetentionInDays: 7
+    Metadata:
+      SamResourceId: CallRecordingStateMachineLogGroup
+  LambdaResourcePolicy:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+        - SubscriptionFilterFunction
+        - Arn
+      Principal: logs.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ConnectLogGroup}:*
+    Metadata:
+      SamResourceId: LambdaResourcePolicy
