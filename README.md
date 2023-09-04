@@ -17,9 +17,9 @@ The solution consists of the following main components:
 #### The `State` Field
 - `INITIALISED`: The recording and analytics behaviour has been set for the contact from the CloudWatch sub filter
 - `IN_PROGRESS - AGENT`: The contact is currently connected to an agent
-- `IN_PROGRESS - QUEUE/IVR`
+- `IN_PROGRESS - QUEUE/IVR`: The contact is still in the contact journey (has not yet reached an agent)
 - `COMPLETED - AGENT`: The contact with an agent has been completed
-- `COMPLETED - QUEUE/IVR`: The contact with the queue/IVR has been completed
+- `COMPLETED - QUEUE/IVR`: The contact with the queue/IVR has been completed (no agent was reached)
 
 #### The `RecordingState` Field
 _These are the different attributes for entries with `COMPLETED - AGENT` states_
@@ -27,9 +27,9 @@ _These are the different attributes for entries with `COMPLETED - AGENT` states_
 - `CALL_RECORDED_FAILURE`: The call was not recorded
 
 #### What should happen to each state
-- _`INITIALISED`, `IN_PROGRESS - AGENT`, `IN_PROGRESS - QUEUE/IVR` must be polled and updated accordingly_ 
-- _`COMPLETED - QUEUE/IVR` (no AgentInfo) must be deleted on a schedule_
-- _`COMPLETED - AGENT` (with AgentInfo) must have the recording bucket searched and update the `RecordState` field_
+- _`INITIALISED`, `IN_PROGRESS - AGENT`, `IN_PROGRESS - QUEUE/IVR` records must be polled and updated accordingly_ 
+- _`COMPLETED - QUEUE/IVR` (no AgentInfo) records must be deleted on a schedule_
+- _`COMPLETED - AGENT` (with AgentInfo) records must have the recording bucket searched and update the `RecordState` field_
 
 ### Step Function Strategy
 A lambda function will be invoked every *5-minutes (needs to run on mod 5 minutes eg: 13:00, 13:05 etc. rather than 13:01, 
