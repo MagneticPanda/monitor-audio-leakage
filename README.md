@@ -165,7 +165,7 @@ Describe Contact Response:  {
 
 ## Future enhancements
 - Add an SNS topic to notify when a call has not been recorded
-
+- An API which queries the DynamoDB table for third party consumption
 ---
 
 ## How to Deploy
