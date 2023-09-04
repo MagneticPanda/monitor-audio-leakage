@@ -170,7 +170,6 @@ Describe Contact Response:  {
 
 ## How to Deploy
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI.
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
 
 To use the SAM CLI, you need the following tools.
 
@@ -178,14 +177,14 @@ To use the SAM CLI, you need the following tools.
 * Node.js - [Install Node.js 18](https://nodejs.org/en/), including the NPM package management tool.
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
 
-To deploy the solution in a client environment, set up your AWS CLI with the appropriate Access Key and Secret Key and run the following commands in your terminal.
+To deploy the solution in a client environment, set up your AWS CLI with the appropriate Access Key and Secret Key and run the following commands in your terminal:
 
 ```bash
 sam package
 sam deploy --guided
 ```
 
-If you are experiencing any deployments issues please reach out to _sashen.moodley@dimensiondata.com_
+> If you are experiencing any deployments issues please reach out to _sashen.moodley@dimensiondata.com_
 
 ## Resources
 See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
