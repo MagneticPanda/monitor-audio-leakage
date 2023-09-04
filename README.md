@@ -177,7 +177,7 @@ To use the SAM CLI, you need the following tools.
 * Node.js - [Install Node.js 18](https://nodejs.org/en/), including the NPM package management tool.
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
 
-To deploy the solution in a client environment, set up your AWS CLI with the appropriate Access Key and Secret Key.
+To deploy the solution in a client environment, set up your AWS CLI with the appropriate Access Key and Secret Key and run the following commands in your terminal.
 
 ```bash
 sam package
