@@ -40,7 +40,7 @@ A lambda function will be invoked every 5-minutes (needs to run on mod 5 minutes
   - The fist parallel branch will have a task state will delete all records that have a `COMPLETED - QUEUE/IVR` state
   - The second parallel branch will have 2 sequential task states:
     - The first task state will poll the `IN_PROGRESS - AGENT` and `IN_PROGRESS - QUEUE/IVR` state and update accordingly
-    - The seconds task state will poll the `COMPLETED - AGENT` states without a `RecordState` field and update accordingly
+    - The second task state will poll the `COMPLETED - AGENT` states without a `RecordState` field and update accordingly
 
 > The `State` field of these records are updated using the `DescribeContact` API. The `RecordingState` field is updated by checking the recording bucket.
 
