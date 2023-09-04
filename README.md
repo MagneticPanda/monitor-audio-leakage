@@ -14,6 +14,8 @@ The solution consists of the following main components:
 - Step Function - The state machine that orchestrates the polling and updating of the recording state of calls. See the Step Function Strategy section for more information.
 
 ### DDB Table Strategy
+Records are indexed by the `ContactId` field. The `State` field is used to determine the current state of the call. The `RecordingState` field is used to determine if the call was successfully recorded.
+
 #### The `State` Field
 - `INITIALISED`: The recording and analytics behaviour has been set for the contact from the CloudWatch sub filter
 - `IN_PROGRESS - AGENT`: The contact is currently connected to an agent
