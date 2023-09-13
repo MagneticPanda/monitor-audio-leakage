@@ -39,7 +39,8 @@ export const handler = async (event, context) => {
                         'State': { S: 'INITIALISED' },
                         'InitiationTimestamp': { NULL: true },
                         'DisconnectTimestamp': { NULL: true },
-                        'RecordingState': { NULL: true }
+                        'RecordingState': { NULL: true },
+                        'InitiationMethod': { NULL: true }
                     }
                 });
                 await ddbClient.send(putItemCommand);

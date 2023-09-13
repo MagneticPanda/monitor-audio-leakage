@@ -1,7 +1,7 @@
 import { DynamoDBClient, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 const ddbClient = new DynamoDBClient();
 
-import { S3Client, ListObjectsCommand } from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 const s3Client = new S3Client();
 
 export const handler = async (event, context) => {
@@ -31,17 +31,29 @@ export const handler = async (event, context) => {
                 const disconnectTimestamp = item.DisconnectTimestamp.S;
                 const disconnectDateSAST = new Date(disconnectTimestamp).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }).split(',')[0];
 
-                // TODO: Add logic to handle more than 1000 objects (no continuation token in V3)
-                const listObjectsCommand = new ListObjectsCommand({
-                    Bucket: recordingBucketName,
-                    Prefix: `connect/${instanceAlias}/CallRecordings/${disconnectDateSAST}/`,
-                    Delimiter: '/',
-                    MaxKeys: 1000,
-                });
-                const listObjectsResult = await s3Client.send(listObjectsCommand);
-                console.info('S3 bucket list objects result: ', listObjectsResult);
+                let continuationToken = null;
+                let bucketRecordingObjects = [];
+                while (true) {
+                    const listObjectsCommand = new ListObjectsV2Command({
+                        Bucket: recordingBucketName,
+                        Prefix: `connect/${instanceAlias}/CallRecordings/${disconnectDateSAST}/`,
+                        Delimiter: '/',
+                        MaxKeys: 1000,
+                        ContinuationToken: continuationToken
+                    });
+                    const listObjectsResult = await s3Client.send(listObjectsCommand);
+                    for (let object of listObjectsResult.Contents) {
+                        bucketRecordingObjects.push(object);
+                    }
 
-                for (let object of listObjectsResult.Contents) {
+                    if (listObjectsResult.ContinuationToken) {
+                        continuationToken = listObjectsResult.ContinuationToken;
+                    } else {
+                        break;
+                    }
+                }
+
+                for (let object of bucketRecordingObjects) {
                     if (object.Key.includes(item.ContactId.S)) {
                         const updateItemCommand = new UpdateItemCommand({
                             TableName: tableName,

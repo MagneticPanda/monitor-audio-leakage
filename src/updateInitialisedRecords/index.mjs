@@ -55,11 +55,12 @@ export const handler = async (event, context) => {
                     Key: {
                         'ContactId': { S: item.ContactId.S }
                     },
-                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp , #State = :state , DisconnectTimestamp = :disconnectTimestamp',
+                    UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp , #State = :state , DisconnectTimestamp = :disconnectTimestamp , InitiationMethod = :initiationMethod',
                     ExpressionAttributeValues: {
                         ':state': { S: newState },
                         ':initiationTimestamp': { S: describeContactResult.Contact.InitiationTimestamp },
-                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true }
+                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true },
+                        ':initiationMethod': { S: describeContactResult.Contact.InitiationMethod }
                     },
                     ExpressionAttributeNames: {
                         '#State': 'State'
@@ -79,7 +80,7 @@ export const handler = async (event, context) => {
     } catch (err) {
         const response = {
             statusCode: 500,
-            error: err
+            error: err instanceof Error ? err.message : err
         };
         console.error('Response: ', response);
         return response;
