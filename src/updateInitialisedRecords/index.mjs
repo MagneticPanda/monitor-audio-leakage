@@ -50,6 +50,12 @@ export const handler = async (event, context) => {
                 const describeContactResult = await connectClient.send(command);
 
                 const newState = getNewState(describeContactResult);
+                // converting timestamps to SAST
+                const utcInitiationDate = new Date(describeContactResult.Contact.InitiationTimestamp);
+                const sastInitiationDate = new Date(utcInitiationDate.getTime() + ((60 * 2) * 60 * 1000));
+                const utcDisconnectDate = new Date(describeContactResult.Contact.DisconnectTimestamp);
+                const sastDisconnectDate = new Date(utcDisconnectDate.getTime() + ((60 * 2) * 60 * 1000));
+
                 const updateItemCommand = new UpdateItemCommand({
                     TableName: tableName,
                     Key: {
@@ -58,8 +64,8 @@ export const handler = async (event, context) => {
                     UpdateExpression: 'SET InitiationTimestamp = :initiationTimestamp , #State = :state , DisconnectTimestamp = :disconnectTimestamp , InitiationMethod = :initiationMethod',
                     ExpressionAttributeValues: {
                         ':state': { S: newState },
-                        ':initiationTimestamp': { S: describeContactResult.Contact.InitiationTimestamp },
-                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: describeContactResult.Contact.DisconnectTimestamp } : { NULL: true },
+                        ':initiationTimestamp': { S: sastInitiationDate.toISOString() },
+                        ':disconnectTimestamp': newState.startsWith('COMPLETED') ? { S: sastDisconnectDate.toISOString() } : { NULL: true },
                         ':initiationMethod': { S: describeContactResult.Contact.InitiationMethod }
                     },
                     ExpressionAttributeNames: {
