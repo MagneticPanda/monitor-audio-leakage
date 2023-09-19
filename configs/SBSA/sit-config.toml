@@ -1,0 +1,52 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "sbsa-branded-calling"
+parameter_overrides = [
+    "AccountAlias=tc01463",
+    "RegionPrefix=afs1",
+    "Stage=sit",
+    "LambdaRoleArn=arn:aws:iam::173246855585:role/BoundedLambdaExecutionRole",
+    "ConnectInstanceArn=arn:aws:connect:af-south-1:173246855585:instance/4ab97371-2325-47b8-934e-b89f3f86aaad",
+    "HostName=api.engage-ae.com",
+    "PushPath=/federated/outbound/v2/realtime",
+    "GetTokenPath=/federated/content/v2/token",
+    "GetTokenHealthPath=/federated/content/v2/token/health",
+    "ProgramUuid=17125b2e-3ce8-455a-af08-c94148e60186",
+    "ClientId=35hh40q7738htodfdm4godpet6",
+    "ClientSecret=1bri667ntt280vcrf7mdsikf8d40hotja2nkgfk6i52f5urvoapf"
+]
+
+[default.build.parameters]
+cached = true
+parallel = true
+template_file = 'template.yaml'
+region = 'af-south-1'
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+s3_bucket = "tc01463-dev-afs1-serverless-sam-deployments"
+s3_prefix = "branded-calling"
+region = "af-south-1"
+tags = "CreatedBy=\"sash\" Project=\"branded-calling\""
+template_file = "cf-template.yaml"
+
+[default.package.parameters]
+s3_bucket = "tc01463-dev-afs1-serverless-sam-deployments"
+s3_prefix = "branded-calling"
+output_template_file = "cf-template.yaml"
+config_file = "configs/SBSA/sit-config.toml"
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"

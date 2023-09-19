@@ -1,0 +1,52 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "call-recording-leakage-detector"
+parameter_overrides = [
+    "AccountAlias=zaf-nprd-tc01463-dev",
+    "RegionPrefix=afs1",
+    "Stage=dev",
+    "LambdaRoleArn=arn:aws:iam::943752670398:role/Bounded_LambdaTestRole",
+    "ConnectInstanceId=0f0afd10-87a6-41b2-8fd0-6d95797f272d",
+    "ConnectInstanceAlias=standardbank-contact-centre-sa-dev",
+    "ConnectLogGroup=/aws/connect/standardbank-contact-centre-sa-dev",
+    "CallRecordingsBucket=standardbank-contact-centre-connect-storage-chnw-afs1-dev",
+    "StepFunctionRoleArn=arn:aws:iam::943752670398:role/BoundedOTPStepFunctionExecutionRole"
+]
+
+[default.build.parameters]
+cached = true
+parallel = true
+template_file = 'template.yaml'
+region = 'af-south-1'
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+s3_bucket = "tc01463-dev-afs1-serverless-sam-deployments"
+s3_prefix = "call-recording-leakage-detector"
+region = "af-south-1"
+tags = [
+    "Project=call-recording-leakage-detector",
+    "CreatedBy=sash"
+]
+template_file = "cf-template.yaml"
+
+[default.package.parameters]
+s3_bucket = "tc01463-dev-afs1-serverless-sam-deployments"
+s3_prefix = "call-recording-leakage-detector"
+output_template_file = "cf-template.yaml"
+config_file = "configs/SBSA/dev-config.toml"
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"

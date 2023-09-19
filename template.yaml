@@ -13,6 +13,10 @@ Globals:
 
 
 Parameters:
+  AccountAlias:
+    Type: String
+    Description: 'Account alias for all AWS resources'
+
   RegionPrefix:
     Type: String
     Description: 'Region prefix for all AWS resources'
@@ -62,7 +66,7 @@ Resources:
   SubscriptionFilterFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-subscription-filter-handler'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter-handler'
       CodeUri: src/subFilterHandler
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -76,12 +80,12 @@ Resources:
       LogGroupName: !Ref ConnectLogGroup
       DestinationArn: !GetAtt SubscriptionFilterFunction.Arn
       FilterPattern: ''
-      FilterName: !Sub '${RegionPrefix}-${Stage}-subscription-filter'
+      FilterName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter'
 
   StartStateMachineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-start-state-machine'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-start-state-machine'
       CodeUri: src/startStateMachine
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -98,7 +102,7 @@ Resources:
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-initialised-records'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-initialised-records'
       CodeUri: src/updateInitialisedRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -110,7 +114,7 @@ Resources:
   CleanTableFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-clean-table'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-clean-table'
       CodeUri: src/cleanTable
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -121,7 +125,7 @@ Resources:
   UpdateInProgressRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-in-progress'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-in-progress'
       CodeUri: src/updateInProgressRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -133,7 +137,7 @@ Resources:
   UpdateCompletedRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${RegionPrefix}-${Stage}-update-completed'
+      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-completed'
       CodeUri: src/updateCompletedRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -147,7 +151,7 @@ Resources:
     Type: AWS::Serverless::StateMachine
     Properties:
       Type: 'STANDARD'
-      Name: !Sub '${RegionPrefix}-${Stage}-call-recording-state-machine'
+      Name: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-call-recording-state-machine'
       DefinitionUri: state-machine-asl.json
       Role: !Ref StepFunctionRoleArn
       DefinitionSubstitutions:
@@ -165,7 +169,7 @@ Resources:
   CallRecordingStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/stepfunctions/${Stage}-call-recording-state-machine'
+      LogGroupName: !Sub '/aws/stepfunctions/call-recording-state-machine'
       RetentionInDays: 7
 
 #  CloudWatchLogsLambdaInvokeRole:
