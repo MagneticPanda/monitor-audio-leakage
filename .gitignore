@@ -208,3 +208,6 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/osx,node,linux,windows,sam
 .idea
 .vscode
+
+src/playground/*
+src/playground
