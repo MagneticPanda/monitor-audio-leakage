@@ -75,6 +75,7 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  # Functions
   SubscriptionFilterFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -109,6 +110,7 @@ Resources:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: cron(0/2 * * * ? *)
+            State: ENABLED
 
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
@@ -158,6 +160,25 @@ Resources:
           RECORDING_BUCKET: !Ref CallRecordingsBucket
           CONNECT_ALIAS: !Ref ConnectInstanceAlias
 
+  ExportToS3Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-export-to-s3"
+      CodeUri: src/exportToS3
+      Handler: index.handler
+      Role: !Ref LambdaRoleArn
+      Environment:
+        Variables:
+          TABLE_ARN: !GetAtt CallRecordingTable.Arn
+          EXPORT_BUCKET_NAME: !Ref CallRecordingsMonitoringBucket
+      Events:
+        ExportToS3Schedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(0/5 * * * ? *)
+            State: DISABLED
+
+  # Step Function
   CallRecordingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -177,6 +198,7 @@ Resources:
         IncludeExecutionData: true
         Level: ALL
 
+  # Log groups
   CallRecordingStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -206,6 +228,7 @@ Resources:
   #                  - 'lambda:InvokeFunction'
   #                Resource: '*'
 
+  # IAM
   LambdaResourcePolicy:
     Type: AWS::Lambda::Permission
     Properties:

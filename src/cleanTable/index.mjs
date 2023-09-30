@@ -3,7 +3,6 @@ const ddbClient = new DynamoDBClient();
 
 export const handler = async (event, context) => {
     try {
-
         console.info('Input event: ', JSON.stringify(event, null, 2));
         console.info('Execution environment: ', JSON.stringify(context));
 
@@ -13,11 +12,11 @@ export const handler = async (event, context) => {
             TableName: tableName,
             FilterExpression: '#State = :state',
             ExpressionAttributeValues: {
-                ':state': { S: 'COMPLETED - QUEUE/IVR' }
+                ':state': { S: 'COMPLETED - QUEUE/IVR' },
             },
             ExpressionAttributeNames: {
-                '#State': 'State'
-            }
+                '#State': 'State',
+            },
         });
         const scanResult = await ddbClient.send(scanCommand);
 
@@ -25,8 +24,8 @@ export const handler = async (event, context) => {
             const deleteCommand = new DeleteItemCommand({
                 TableName: tableName,
                 Key: {
-                    'ContactId': {S: item.ContactId.S}
-                }
+                    ContactId: { S: item.ContactId.S },
+                },
             });
             return await ddbClient.send(deleteCommand);
         });
@@ -34,17 +33,16 @@ export const handler = async (event, context) => {
 
         const response = {
             statusCode: 200,
-            message: `Deleted ${scanResult.Items.length} items from ${tableName}`
+            message: `Deleted ${scanResult.Items.length} items from ${tableName}`,
         };
         console.info('Response: ', response);
         return response;
-
     } catch (err) {
         const response = {
             statusCode: 500,
-            error: err
+            error: err,
         };
         console.error('Response: ', response);
         return response;
     }
-}
+};
