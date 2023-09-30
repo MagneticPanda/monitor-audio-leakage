@@ -1,7 +1,6 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Audio monitoring solution SAM template
-
 
 Globals:
   Function:
@@ -11,62 +10,61 @@ Globals:
     Architectures:
       - x86_64
 
-
 Parameters:
   AccountAlias:
     Type: String
-    Description: 'Account alias for all AWS resources'
+    Description: "Account alias for all AWS resources"
 
   RegionPrefix:
     Type: String
-    Description: 'Region prefix for all AWS resources'
+    Description: "Region prefix for all AWS resources"
 
   Stage:
     Type: String
-    Description: 'Current stage of the deployment'
+    Description: "Current stage of the deployment"
 
   LambdaRoleArn:
     Type: String
-    Description: 'Role used for all lambda functions'
+    Description: "Role used for all lambda functions"
 
   ConnectInstanceId:
     Type: String
-    Description: 'Amazon Connect instance ID'
+    Description: "Amazon Connect instance ID"
 
   ConnectInstanceAlias:
     Type: String
-    Description: 'Amazon Connect instance alias'
+    Description: "Amazon Connect instance alias"
 
   ConnectLogGroup:
     Type: String
-    Description: 'Amazon Connect log group'
+    Description: "Amazon Connect log group"
 
   CallRecordingsBucket:
     Type: String
-    Description: 'Name of S3 bucket for call recordings'
+    Description: "Name of S3 bucket for call recordings"
 
   StepFunctionRoleArn:
     Type: String
-    Description: 'Role used for the step function'
-
-
+    Description: "Role used for the step function"
 
 Resources:
   CallRecordingTable:
     Type: AWS::Serverless::SimpleTable
     Properties:
-      TableName: !Sub '${RegionPrefix}-${Stage}-call-recordings'
+      TableName: !Sub "${RegionPrefix}-${Stage}-call-recordings"
       PrimaryKey:
         Name: ContactId
         Type: String
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   SubscriptionFilterFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter-handler'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter-handler"
       CodeUri: src/subFilterHandler
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -79,13 +77,13 @@ Resources:
     Properties:
       LogGroupName: !Ref ConnectLogGroup
       DestinationArn: !GetAtt SubscriptionFilterFunction.Arn
-      FilterPattern: ''
-      FilterName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter'
+      FilterPattern: ""
+      FilterName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter"
 
   StartStateMachineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-start-state-machine'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-start-state-machine"
       CodeUri: src/startStateMachine
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -97,12 +95,11 @@ Resources:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: cron(0/2 * * * ? *)
-#            cron(13, * * * ? *)
 
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-initialised-records'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-update-initialised-records"
       CodeUri: src/updateInitialisedRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -114,7 +111,7 @@ Resources:
   CleanTableFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-clean-table'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-clean-table"
       CodeUri: src/cleanTable
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -125,7 +122,7 @@ Resources:
   UpdateInProgressRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-in-progress'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-update-in-progress"
       CodeUri: src/updateInProgressRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -137,7 +134,7 @@ Resources:
   UpdateCompletedRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-update-completed'
+      FunctionName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-update-completed"
       CodeUri: src/updateCompletedRecords
       Handler: index.handler
       Role: !Ref LambdaRoleArn
@@ -150,8 +147,8 @@ Resources:
   CallRecordingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      Type: 'STANDARD'
-      Name: !Sub '${AccountAlias}-${RegionPrefix}-${Stage}-call-recording-state-machine'
+      Type: "STANDARD"
+      Name: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-call-recording-state-machine"
       DefinitionUri: state-machine-asl.json
       Role: !Ref StepFunctionRoleArn
       DefinitionSubstitutions:
@@ -169,36 +166,36 @@ Resources:
   CallRecordingStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/stepfunctions/call-recording-state-machine'
+      LogGroupName: !Sub "/aws/stepfunctions/call-recording-state-machine"
       RetentionInDays: 7
 
-#  CloudWatchLogsLambdaInvokeRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      RoleName: !Sub '${RegionPrefix}-${Stage}-cloudwatch-logs-lambda-invoke-role'
-#      AssumeRolePolicyDocument:
-#        Version: '2012-10-17'
-#        Statement:
-#          - Effect: Allow
-#            Principal:
-#              Service:
-#                - logs.amazonaws.com
-#            Action:
-#              - 'sts:AssumeRole'
-#      Policies:
-#        - PolicyName: 'CloudWatchLogsLambdaInvokePolicy'
-#          PolicyDocument:
-#            Version: '2012-10-17'
-#            Statement:
-#              - Effect: Allow
-#                Action:
-#                  - 'lambda:InvokeFunction'
-#                Resource: '*'
+  #  CloudWatchLogsLambdaInvokeRole:
+  #    Type: AWS::IAM::Role
+  #    Properties:
+  #      RoleName: !Sub '${RegionPrefix}-${Stage}-cloudwatch-logs-lambda-invoke-role'
+  #      AssumeRolePolicyDocument:
+  #        Version: '2012-10-17'
+  #        Statement:
+  #          - Effect: Allow
+  #            Principal:
+  #              Service:
+  #                - logs.amazonaws.com
+  #            Action:
+  #              - 'sts:AssumeRole'
+  #      Policies:
+  #        - PolicyName: 'CloudWatchLogsLambdaInvokePolicy'
+  #          PolicyDocument:
+  #            Version: '2012-10-17'
+  #            Statement:
+  #              - Effect: Allow
+  #                Action:
+  #                  - 'lambda:InvokeFunction'
+  #                Resource: '*'
 
   LambdaResourcePolicy:
     Type: AWS::Lambda::Permission
     Properties:
-      Action: 'lambda:InvokeFunction'
+      Action: "lambda:InvokeFunction"
       FunctionName: !GetAtt SubscriptionFilterFunction.Arn
-      Principal: 'logs.amazonaws.com'
-      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ConnectLogGroup}:*'
+      Principal: "logs.amazonaws.com"
+      SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ConnectLogGroup}:*"
