@@ -48,18 +48,32 @@ Parameters:
     Description: "Role used for the step function"
 
 Resources:
+  # Storage
   CallRecordingTable:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Sub "${RegionPrefix}-${Stage}-call-recordings"
-      PrimaryKey:
-        Name: ContactId
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+      AttributeDefinitions:
+        - AttributeName: ContactId
+          AttributeType: String
+      KeySchema:
+        - AttributeName: ContactId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+
+  CallRecordingsMonitoringBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AccountAlias}-${RegionPrefix}-${Stage}-call-recordings-monitoring"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   SubscriptionFilterFunction:
     Type: AWS::Serverless::Function
