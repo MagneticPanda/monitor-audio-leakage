@@ -109,7 +109,7 @@ Resources:
         PerioidicInvoke:
           Type: ScheduleV2
           Properties:
-            ScheduleExpression: cron(0/2 * * * ? *)
+            ScheduleExpression: cron(0/1 * * * ? *)
             State: ENABLED
 
   UpdateInitialisedRecordsFunction:
