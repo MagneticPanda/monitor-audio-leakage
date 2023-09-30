@@ -4,6 +4,7 @@ version = 0.1
 [default.global.parameters]
 stack_name = "monitor-recording-leakage"
 parameter_overrides = [
+    "AccountAlias=dd-icx",
     "RegionPrefix=afs1",
     "Stage=dev",
     "LambdaRoleArn=arn:aws:iam::687244881512:role/lambda-admin-access",
@@ -39,7 +40,7 @@ tags = [
 s3_bucket = "sash-sam"
 s3_prefix = "monitor-recording-leakage"
 output_template_file = "cf-template.yaml"
-config_file = "samconfig.toml"
+config_file = "configs/DD/dev-config.toml"
 
 [default.sync.parameters]
 watch = true

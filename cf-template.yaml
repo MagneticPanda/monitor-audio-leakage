@@ -9,6 +9,9 @@ Globals:
     Architectures:
     - x86_64
 Parameters:
+  AccountAlias:
+    Type: String
+    Description: Account alias for all AWS resources
   RegionPrefix:
     Type: String
     Description: Region prefix for all AWS resources
@@ -35,24 +38,41 @@ Parameters:
     Description: Role used for the step function
 Resources:
   CallRecordingTable:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
       TableName:
         Fn::Sub: ${RegionPrefix}-${Stage}-call-recordings
-      PrimaryKey:
-        Name: ContactId
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+      AttributeDefinitions:
+      - AttributeName: ContactId
+        AttributeType: String
+      KeySchema:
+      - AttributeName: ContactId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
     Metadata:
       SamResourceId: CallRecordingTable
+  CallRecordingsMonitoringBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-call-recordings-monitoring
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    Metadata:
+      SamResourceId: CallRecordingsMonitoringBucket
   SubscriptionFilterFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-subscription-filter-handler
-      CodeUri: s3://sash-sam/monitor-recording-leakage/857fc98300187fbd7f48c550b01928fc
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter-handler
+      CodeUri: s3://sash-sam/monitor-recording-leakage/5ada50dac5627b4e371efdc4c8dc6424
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -73,15 +93,15 @@ Resources:
         - Arn
       FilterPattern: ''
       FilterName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-subscription-filter
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-subscription-filter
     Metadata:
       SamResourceId: SubscriptionFilter
   StartStateMachineFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-start-state-machine
-      CodeUri: s3://sash-sam/monitor-recording-leakage/bfdf3c3f6eebc56c386a7ed46acb917a
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-start-state-machine
+      CodeUri: s3://sash-sam/monitor-recording-leakage/49b4331017bc67ebf9f1427e97294ee5
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -94,14 +114,15 @@ Resources:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: cron(0/2 * * * ? *)
+            State: ENABLED
     Metadata:
       SamResourceId: StartStateMachineFunction
   UpdateInitialisedRecordsFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-update-initialised-records
-      CodeUri: s3://sash-sam/monitor-recording-leakage/1566f11b9efa63d9cc562f0a1d179f58
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-update-initialised-records
+      CodeUri: s3://sash-sam/monitor-recording-leakage/89677482a10f5ce3e4d88eba87d0b897
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -117,8 +138,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-clean-table
-      CodeUri: s3://sash-sam/monitor-recording-leakage/30dbd49998ccde141690ef040e5e4209
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-clean-table
+      CodeUri: s3://sash-sam/monitor-recording-leakage/c37f0d42ee1b522abe8dbf9ef30dedf3
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -132,8 +153,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-update-in-progress
-      CodeUri: s3://sash-sam/monitor-recording-leakage/8375e633d3c7d99b552ef9f24ac137d8
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-update-in-progress
+      CodeUri: s3://sash-sam/monitor-recording-leakage/3814e48392f970cf5f6473b379602bd2
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -149,8 +170,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName:
-        Fn::Sub: ${RegionPrefix}-${Stage}-update-completed
-      CodeUri: s3://sash-sam/monitor-recording-leakage/d909854241a76f091cccff031d694155
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-update-completed
+      CodeUri: s3://sash-sam/monitor-recording-leakage/50cd192fdc287dfaa4201e3cb6c85e96
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -164,12 +185,37 @@ Resources:
             Ref: ConnectInstanceAlias
     Metadata:
       SamResourceId: UpdateCompletedRecordsFunction
+  ExportToS3Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-export-to-s3
+      CodeUri: s3://sash-sam/monitor-recording-leakage/8bd07c13313dbc00bf917f7ad7654ad7
+      Handler: index.handler
+      Role:
+        Ref: LambdaRoleArn
+      Environment:
+        Variables:
+          TABLE_ARN:
+            Fn::GetAtt:
+            - CallRecordingTable
+            - Arn
+          EXPORT_BUCKET_NAME:
+            Ref: CallRecordingsMonitoringBucket
+      Events:
+        ExportToS3Schedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(0/5 * * * ? *)
+            State: DISABLED
+    Metadata:
+      SamResourceId: ExportToS3Function
   CallRecordingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Type: STANDARD
       Name:
-        Fn::Sub: ${RegionPrefix}-${Stage}-call-recording-state-machine
+        Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-call-recording-state-machine
       DefinitionUri:
         Bucket: sash-sam
         Key: monitor-recording-leakage/b6954937c458e031b89cbd75c27a077d
@@ -207,7 +253,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName:
-        Fn::Sub: /aws/stepfunctions/${Stage}-call-recording-state-machine
+        Fn::Sub: /aws/stepfunctions/call-recording-state-machine
       RetentionInDays: 7
     Metadata:
       SamResourceId: CallRecordingStateMachineLogGroup
