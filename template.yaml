@@ -55,7 +55,7 @@ Resources:
       TableName: !Sub "${RegionPrefix}-${Stage}-call-recordings"
       AttributeDefinitions:
         - AttributeName: ContactId
-          AttributeType: String
+          AttributeType: S
       KeySchema:
         - AttributeName: ContactId
           KeyType: HASH
