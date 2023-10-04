@@ -176,7 +176,7 @@ Resources:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: cron(0/5 * * * ? *)
-            State: DISABLED
+            State: ENABLED
 
   # Step Function
   CallRecordingStateMachine:

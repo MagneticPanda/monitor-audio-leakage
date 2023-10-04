@@ -1,8 +1,7 @@
-import { DynamoDBClient, DynamoDBClientConfig, ExportTableToPointInTimeCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ExportTableToPointInTimeCommand } from '@aws-sdk/client-dynamodb';
 import { getSastDateTime, getSastDateTimeNDaysAgo } from './utils/dateTimeUtils.mjs';
 
-const ddbConfig = new DynamoDBClientConfig({ region: 'af-south-1' });
-const ddbClient = new DynamoDBClient(ddbConfig);
+const ddbClient = new DynamoDBClient();
 
 export const handler = async (event, context) => {
     try {

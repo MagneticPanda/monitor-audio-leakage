@@ -113,7 +113,7 @@ Resources:
         PerioidicInvoke:
           Type: ScheduleV2
           Properties:
-            ScheduleExpression: cron(0/2 * * * ? *)
+            ScheduleExpression: cron(0/1 * * * ? *)
             State: ENABLED
     Metadata:
       SamResourceId: StartStateMachineFunction
@@ -190,7 +190,7 @@ Resources:
     Properties:
       FunctionName:
         Fn::Sub: ${AccountAlias}-${RegionPrefix}-${Stage}-export-to-s3
-      CodeUri: s3://sash-sam/monitor-recording-leakage/8bd07c13313dbc00bf917f7ad7654ad7
+      CodeUri: s3://sash-sam/monitor-recording-leakage/6a7a58f4a7984c774fbd5e6b330bbe5f
       Handler: index.handler
       Role:
         Ref: LambdaRoleArn
@@ -207,7 +207,7 @@ Resources:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: cron(0/5 * * * ? *)
-            State: DISABLED
+            State: ENABLED
     Metadata:
       SamResourceId: ExportToS3Function
   CallRecordingStateMachine:
