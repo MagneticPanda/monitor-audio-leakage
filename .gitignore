@@ -212,3 +212,4 @@ $RECYCLE.BIN/
 src/playground/*
 src/playground
 cf-template.yaml
+*.zip

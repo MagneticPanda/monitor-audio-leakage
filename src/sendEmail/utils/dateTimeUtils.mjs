@@ -13,7 +13,3 @@ export const getSastDateTime = (date, useDash = true) => {
   sastDateTime = sastDateTime.replace(", ", "T");
   return sastDateTime;
 };
-
-const dateObj = new Date();
-dateObj.setDate(dateObj.getDate() - 1);
-console.info('Get SAST date time: ', getSastDateTime(dateObj, false).split('T')[0]);
